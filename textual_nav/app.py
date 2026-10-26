@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Static
+from textual.widgets import Footer, Header, Static
 
 from textual_nav.page import NavPage
 from textual_nav.widgets import BaseNavigationWidget, NavTab
@@ -37,9 +37,12 @@ class NavApp(App):
     nav_visible: reactive[bool] = reactive(True, init=False)
     page_visible: reactive[bool] = reactive(True, init=False)
     current_tab: reactive[str] = reactive("")
+    footer: Footer | bool | None = None
+    header: Header | bool | None = None
 
     def on_mount(self):
-        self.switch_page(self.DEFAULT_PAGE or self.PAGES[0])
+        if self.page_visible:
+            self.switch_page(self.DEFAULT_PAGE or self.PAGES[0])
 
     def compose_nav(self) -> ComposeResult:
         assert self.NAV_TYPE, "set NAV_TYPE or override compose_nav"
@@ -123,6 +126,11 @@ class NavApp(App):
         self.query_one("#pages").display = visible
 
     def compose(self) -> ComposeResult:
+        if self.header:
+            if self.header is True:
+                self.header = Header()
+            yield self.header
+
         nav = Nav(*self.compose_nav(), dock=self.NAV_POSITION)
         nav.display = self.nav_visible
         yield nav
@@ -131,6 +139,11 @@ class NavApp(App):
         pages.display = self.page_visible
         with pages:
             yield Static("[no content]", id="no-content")
+
+        if self.footer:
+            if self.footer is True:
+                self.footer = Footer()
+            yield self.footer
 
     def on_nav_tab_clicked(self, event: NavTab.Clicked):
         event.stop()
